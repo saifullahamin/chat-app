@@ -1,5 +1,11 @@
 import Chat from "../models/chatModel";
 import ChatMember from "../models/chatMemberModel";
+import { QueryTypes } from "sequelize";
+import sequelize from "../config/database";
+
+interface ChatResult {
+  chatId: string;
+}
 
 const createSingleChat = async (userId: number, selectedUserId: number) => {
   const chat = await Chat.create({ chatType: "single" });
@@ -13,49 +19,30 @@ const createSingleChat = async (userId: number, selectedUserId: number) => {
 };
 
 const findSingleChat = async (userId: number, selectedUserId: number) => {
-  // interface ChatResult {
-  //   chatId: string;
-  // }
-
-  // const { chatId } = await sequelize.query<ChatResult>(`
-  //   SELECT cm1."chatId"::text as "chatId"
-  //   FROM chat_members cm1
-  //   JOIN chat_members cm2 ON cm1."chatId" = cm2."chatId"
-  //   JOIN chats c ON c.id = cm1."chatId"
-  //   WHERE cm1."userId" = :firstUserId
-  //   AND cm2."userId" = :secondUserId
-  //   AND c."chatType" = 'single'
-  //   LIMIT 1
-  // `, {
-  //   replacements: {
-  //     firstUserId: 3,
-  //     secondUserId: 2
-  //   },
-  //   plain: true,
-  //   type: QueryTypes.SELECT
-  // });
-
-  // Temp solution
-
-  const user1Chats = await ChatMember.findAll({
-    attributes: ["chatId"],
-    where: { userId: userId },
-  });
-
-  const user2Chats = await ChatMember.findAll({
-    attributes: ["chatId"],
-    where: { userId: selectedUserId },
-  });
-
-  const user1ChatIds = user1Chats.map((chat) => chat.chatId);
-  const user2ChatIds = user2Chats.map((chat) => chat.chatId);
-
-  const commonChatId = user1ChatIds.find((chatId) =>
-    user2ChatIds.includes(chatId)
+  const result = await sequelize.query<ChatResult>(
+    `
+    SELECT cm1."chatId"::text as "chatId"
+    FROM chat_members cm1
+    JOIN chat_members cm2 ON cm1."chatId" = cm2."chatId"
+    JOIN chats c ON c.id = cm1."chatId"
+    WHERE cm1."userId" = :firstUserId
+    AND cm2."userId" = :secondUserId
+    AND c."chatType" = 'single'
+    LIMIT 1
+  `,
+    {
+      replacements: {
+        firstUserId: userId,
+        secondUserId: selectedUserId,
+      },
+      plain: true,
+      type: QueryTypes.SELECT,
+    }
   );
-  if (commonChatId) {
+
+  if (result) {
     return Chat.findOne({
-      where: { id: commonChatId },
+      where: { id: result?.chatId },
     });
   }
 
