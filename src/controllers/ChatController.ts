@@ -1,5 +1,5 @@
-import { Request } from 'express';
-import { chatManager } from '../managers/chatManager';
+import { Request } from "express";
+import { chatManager } from "../managers/chatManager";
 
 class ChatController {
   public static async getOrCreateChat(req: Request) {
